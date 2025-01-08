@@ -1,0 +1,38 @@
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / scalaVersion := "3.3.4"
+
+val flinkVersion = "1.18.1"
+val flinkMlVersion = "2.3.0"
+
+libraryDependencies ++= Seq(
+  "org.flinkextended" %% "flink-scala-api" % s"1.2.3-SNAPSHOT",
+  "com.lihaoyi" %% "os-lib" % "0.11.3",
+  "org.emergent-order" %% "onnx-scala-backends" % "0.17.0",
+  "org.apache.flink" % "flink-ml-uber-1.17" % flinkMlVersion % Provided,
+  ("org.apache.flink" % "statefun-flink-core" % "3.2.0")
+    .exclude("org.apache.flink", "flink-streaming-java_2.12")
+    .exclude("org.apache.flink", "flink-metrics-dropwizard") % Provided,
+  "org.flinkextended" %% "flink-scala-api" % s"1.2.3-SNAPSHOT",
+  "org.apache.flink" % "flink-runtime-web" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-table-api-java-bridge" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-connector-files" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-csv" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-clients" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-table-runtime" % flinkVersion % Provided,
+  "org.apache.flink" % "flink-table-planner-loader" % flinkVersion % Provided,
+  "ch.qos.logback" % "logback-classic" % "1.4.14" % Provided
+)
+
+// make run command include the provided dependencies
+Compile / run := Defaults
+  .runTask(
+    Compile / fullClasspath,
+    Compile / run / mainClass,
+    Compile / run / runner
+  )
+  .evaluated
+
+// stays inside the sbt console when we press "ctrl-c" while a Flink programme executes with "run" or "runMain"
+Compile / run / fork := true
+Global / cancelable := true

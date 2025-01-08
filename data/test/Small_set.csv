@@ -1,0 +1,11 @@
+#RowNumber,CustomerId,Surname,CreditScore,Geography,Gender,Age,Tenure,Balance,NumOfProducts,HasCrCard,IsActiveMember,EstimatedSalary
+9991,15798964,Nkemakonam,714,Germany,Male,33,3,35016.6,1,1,0,53667.08
+9992,15769959,Ajuluchukwu,597,France,Female,53,4,88381.21,1,1,0,69384.71
+9993,15657105,Chukwualuka,726,Spain,Male,36,2,0,1,1,0,195192.4
+9994,15569266,Rahman,644,France,Male,28,7,155060.41,1,1,0,29179.52
+9995,15719294,Wood,800,France,Female,29,2,0,2,0,0,167773.55
+9996,15606229,Obijiaku,771,France,Male,39,5,0,2,1,0,96270.64
+9997,15569892,Johnstone,516,France,Male,35,10,57369.61,1,1,1,101699.77
+9998,15584532,Liu,709,France,Female,36,7,0,1,0,1,42085.58
+9999,15682355,Sabbatini,772,Germany,Male,42,3,75075.31,2,1,0,92888.52
+10000,15628319,Walker,792,France,Female,28,4,130142.79,1,1,0,38190.78

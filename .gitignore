@@ -1,0 +1,14 @@
+.idea
+project/project
+project/target
+target
+.DS_STORE
+.git
+.bsp
+.run
+.bloop
+.metals
+.vscode
+metals.sbt
+.scala-build
+*.jar
