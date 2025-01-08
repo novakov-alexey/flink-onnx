@@ -71,16 +71,19 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     ChurnPrediction(predicted.head, predicted.head > 0.5)
 
 @main def main(args: String*): Unit =
-  val config = Configuration.fromMap(
+  val localRun = args.isEmpty
+  lazy val config = Configuration.fromMap(
     Map(
       BIND_PORT.key -> "8081",
       "execution.checkpointing.interval" -> "5 s"
     ).asJava
   )
-  val env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config)
+  val env =
+    if localRun then
+      StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(config)
+    else StreamExecutionEnvironment.getExecutionEnvironment
   val tEnv = StreamTableEnvironment.create(env)
 
-  val localRun = args.isEmpty
   val modelPath =
     if localRun then os.pwd / "customer-churn.onnx"
     else
@@ -109,11 +112,13 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     .column("Exited", DataTypes.DOUBLE())
     .build()
 
+  // 1 - Index Categorical columns
   val indexer = StringIndexer()
     .setStringOrderType(StringIndexerParams.ALPHABET_ASC_ORDER)
     .setInputCols("GeographyStr", "GenderStr")
     .setOutputCols("GeographyInd", "Gender")
 
+  // 2 - Encode Geography column
   val geographyEncoder =
     OneHotEncoder()
       .setInputCols("GeographyInd")
@@ -195,7 +200,6 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
             // remove label column
             schema.getColumns().asScala.dropRight(1).asJava
           )
-          // .watermark("ts", $("ts").minus(lit(5).seconds()))
           .build()
       )
       .option("path", testDataPath)
