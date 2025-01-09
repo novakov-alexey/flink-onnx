@@ -8,7 +8,7 @@ val flinkMlVersion = "2.3.0"
 libraryDependencies ++= Seq(
   "org.flinkextended" %% "flink-scala-api" % s"1.2.3-SNAPSHOT",
   "com.lihaoyi" %% "os-lib" % "0.11.3",
-  "org.emergent-order" %% "onnx-scala-backends" % "0.17.0",
+  "com.microsoft.onnxruntime" % "onnxruntime" % "1.19.2",
   "org.apache.flink" % "flink-ml-uber-1.17" % flinkMlVersion % Provided,
   ("org.apache.flink" % "statefun-flink-core" % "3.2.0")
     .exclude("org.apache.flink", "flink-streaming-java_2.12")
@@ -23,6 +23,7 @@ libraryDependencies ++= Seq(
   "org.apache.flink" % "flink-table-planner-loader" % flinkVersion % Provided,
   "ch.qos.logback" % "logback-classic" % "1.4.14" % Provided
 )
+assemblyPackageScala / assembleArtifact := false
 
 // make run command include the provided dependencies
 Compile / run := Defaults

@@ -1,12 +1,5 @@
 package example
 
-import org.emergentorder.onnx.Tensors.*
-import org.emergentorder.onnx.Tensors.Tensor.*
-import org.emergentorder.onnx.backends.ORTModelBackend
-import org.emergentorder.compiletime.*
-import org.emergentorder.io.kjaer.compiletime.*
-import cats.effect.unsafe.implicits.*
-
 import org.apache.flinkx.api.StreamExecutionEnvironment
 import org.apache.flinkx.api.serializers.*
 import org.apache.flinkx.api.conv.*
@@ -31,8 +24,15 @@ import org.apache.flink.ml.builder.Pipeline
 import org.apache.flink.ml.api.Stage
 import org.apache.flink.ml.Functions.vectorToArray
 
+import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtSession
+import ai.onnxruntime.OnnxTensor
+
 import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
+import scala.util.Using
+
+import java.nio.FloatBuffer
 
 case class ChurnPrediction(raw: Float, exited: Boolean)
 
@@ -51,24 +51,29 @@ case class Customer(
 
 class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     extends RichMapFunction[Array[Float], ChurnPrediction]:
-  private val shape = Shape.matrix(1, vectorSize)
-  @transient var ann: ORTModelBackend = _
+
+  private val shape = Array(1L, vectorSize)
+  @transient var env: OrtEnvironment = _
+  @transient var session: OrtSession = _
 
   override def open(parameters: Configuration): Unit =
-    val modelBytes = os.read.bytes(os.Path(modelPath))
-    ann = ORTModelBackend(modelBytes)
+    env = OrtEnvironment.getEnvironment()
+    session = env.createSession(modelPath, OrtSession.SessionOptions())
 
   override def map(features: Array[Float]): ChurnPrediction =
-    val inputs = Tensor(features, shape)
-    val out = ann.fullModel[
-      Float,
-      "CustomerChurnClassification",
-      "Batch" ##: "Exited" ##: TSNil,
-      1 #: 1 #: SNil
-    ](Tuple(inputs))
+    var tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(features), shape)
+    val inputs = Map("dense_input" -> tensor).asJava
 
-    val predicted = out.data.unsafeRunSync()
+    val predicted = Using.resource(session.run(inputs)) { outputs =>
+      val out = outputs.iterator().asScala.toList.head
+      out.getValue.asInstanceOf[OnnxTensor].getFloatBuffer.array()
+    }
+
     ChurnPrediction(predicted.head, predicted.head > 0.5)
+
+  override def close(): Unit =
+    env.close()
+    session.close()
 
 @main def main(args: String*): Unit =
   val localRun = args.isEmpty
