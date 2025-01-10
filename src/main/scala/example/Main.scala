@@ -36,19 +36,6 @@ import java.nio.FloatBuffer
 
 case class ChurnPrediction(raw: Float, exited: Boolean)
 
-case class Customer(
-    creditScore: Double,
-    geography: String,
-    gender: String,
-    age: Int,
-    tenure: Double,
-    balance: Double,
-    numOfProducts: Int,
-    hasCrCard: Boolean,
-    isActiveMember: Boolean,
-    estimatedSalary: Double
-)
-
 class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     extends RichMapFunction[Array[Float], ChurnPrediction]:
 
