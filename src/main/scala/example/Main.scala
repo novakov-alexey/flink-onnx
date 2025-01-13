@@ -23,6 +23,7 @@ import org.apache.flink.ml.feature.vectorassembler.VectorAssembler
 import org.apache.flink.ml.builder.Pipeline
 import org.apache.flink.ml.api.Stage
 import org.apache.flink.ml.Functions.vectorToArray
+import org.slf4j.LoggerFactory
 
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
@@ -63,6 +64,7 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     session.close()
 
 @main def main(args: String*): Unit =
+  val logger = LoggerFactory.getLogger(this.getClass())
   val localRun = args.isEmpty
   lazy val config = Configuration.fromMap(
     Map(
@@ -154,10 +156,7 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
         sys.error(
           s"Remote execution requires file path to CSV training data at position (1)"
         )
-      val filePath = args(1)
-      if !os.Path(filePath).toIO.exists then
-        sys.error(s"File at ${filePath} path does not exist")
-      filePath
+      args(1)
 
   val trainData = tEnv.from(
     TableDescriptor
@@ -182,23 +181,25 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
   val testDataPath =
     if localRun then s"file://${os.pwd}/data/test"
     else args(2)
+  val tableDesc = TableDescriptor
+    .forConnector("filesystem")
+    .schema(
+      Schema
+        .newBuilder()
+        .fromColumns(
+          // remove label column
+          schema.getColumns().asScala.dropRight(1).asJava
+        )
+        .build()
+    )
+    .option("path", testDataPath)
+    .option("format", "csv")
+    .option("csv.allow-comments", "true")
+
   val testData = tEnv.from(
-    TableDescriptor
-      .forConnector("filesystem")
-      .schema(
-        Schema
-          .newBuilder()
-          .fromColumns(
-            // remove label column
-            schema.getColumns().asScala.dropRight(1).asJava
-          )
-          .build()
-      )
-      .option("path", testDataPath)
-      .option("format", "csv")
-      .option("csv.allow-comments", "true")
-      .option("source.monitor-interval", "3s")
-      .build()
+    (if args.length > 3 || localRun then
+       tableDesc.option("source.monitor-interval", "3s")
+     else tableDesc).build()
   )
 
   val transformed = featureExtractor.transform(testData).head
@@ -212,12 +213,11 @@ class CustomerChurnClassifier(modelPath: String, vectorSize: Int)
     try r.getFieldAs[Array[?]](0).map(_.asInstanceOf[T])
     catch
       case e =>
-        e.printStackTrace
-        sys.error(s"Failed to parse field at row(0): $r")
+        throw RuntimeException(s"Failed to parse field at row(0): $r", e)
 
   DataStream(tEnv.toDataStream(features))
     .map(toArray[Float])
     .map(CustomerChurnClassifier(modelPath.toString, vectorSizes.sum))
-    .print()
+    .addSink(p => logger.info(p.toString()))
 
   env.execute("CustomerChurnAnalysis")

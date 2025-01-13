@@ -8,7 +8,7 @@ val flinkMlVersion = "2.3.0"
 libraryDependencies ++= Seq(
   "org.flinkextended" %% "flink-scala-api" % s"1.2.3-SNAPSHOT",
   "com.lihaoyi" %% "os-lib" % "0.11.3",
-  "com.microsoft.onnxruntime" % "onnxruntime" % "1.19.2",
+  "com.microsoft.onnxruntime" % "onnxruntime" % "1.19.2" % Provided,
   "org.apache.flink" % "flink-ml-uber-1.17" % flinkMlVersion % Provided,
   ("org.apache.flink" % "statefun-flink-core" % "3.2.0")
     .exclude("org.apache.flink", "flink-streaming-java_2.12")
